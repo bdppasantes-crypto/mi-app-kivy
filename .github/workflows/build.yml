@@ -28,13 +28,23 @@ jobs:
         pip install cython==0.29.33
         pip install buildozer
 
-    - name: Crear especificación Buildozer
+    - name: Generar y configurar buildozer.spec
       run: |
-        yes | buildozer init
+        buildozer init
+        sed -i 's/# android.api = 31/android.api = 33/' buildozer.spec
+        sed -i 's/# android.minapi = 21/android.minapi = 24/' buildozer.spec
+        sed -i 's/# android.ndk = 25b/android.ndk = 25b/' buildozer.spec
+        sed -i 's/android.accept_sdk_license = False/android.accept_sdk_license = True/' buildozer.spec
+
+    - name: Aceptar licencias del SDK de Android
+      run: |
+        mkdir -p ~/.buildozer/android/platform/android-sdk/licenses
+        yes | buildozer android debug || true
+        yes | ~/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin/sdkmanager --licenses || true
 
     - name: Compilar APK
       run: |
-        buildozer -v android debug
+        yes | buildozer -v android debug
 
     - name: Subir archivo APK
       uses: actions/upload-artifact@v4
