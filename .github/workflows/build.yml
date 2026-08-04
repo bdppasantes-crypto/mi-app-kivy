@@ -8,17 +8,36 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    container:
-      image: ghcr.io/kivy/buildozer:latest
 
     steps:
     - name: Descargar codigo del repositorio
       uses: actions/checkout@v4
 
-    - name: Compilar APK
+    - name: Configurar Python Estable (3.10)
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+
+    - name: Instalar dependencias del sistema
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y build-essential libsqlite3-dev sqlite3 bzip2 libbz2-dev libssl-dev openssl libgdbm-dev libgdbm-compat-dev liblzma-dev libreadline-dev libffi-dev uuid-dev libncurses5-dev libncursesw5-dev xz-utils zip unzip openjdk-17-jdk autoconf libtool pkg-config zlib1g-dev ccache lld
+
+    - name: Instalar Buildozer y Cython
+      run: |
+        pip install --upgrade pip
+        pip install "cython<3.0.0"
+        pip install buildozer
+
+    - name: Preparar archivo de configuracion
       run: |
         yes | buildozer init
+        # Forzar el uso de Python 3.10 y aceptar licencias de Android
         sed -i 's/android.accept_sdk_license = False/android.accept_sdk_license = True/' buildozer.spec
+        sed -i 's/# android.api = 31/android.api = 33/' buildozer.spec
+
+    - name: Compilar APK
+      run: |
         yes | buildozer -v android debug
 
     - name: Subir APK generado
