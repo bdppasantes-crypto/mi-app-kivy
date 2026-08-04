@@ -10,8 +10,14 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Clonar repositorio
+    - name: Descargar repositorio
       uses: actions/checkout@v4
+
+    - name: Configurar Java 17
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: '17'
 
     - name: Configurar Python
       uses: actions/setup-python@v5
@@ -21,32 +27,26 @@ jobs:
     - name: Instalar dependencias del sistema
       run: |
         sudo apt-get update
-        sudo apt-get install -y build-essential libsqlite3-dev sqlite3 bzip2 libbz2-dev libssl-dev openssl libgdbm-dev libgdbm-compat-dev liblzma-dev libreadline-dev libffi-dev uuid-dev libncurses5-dev libncursesw5-dev xz-utils zip unzip openjdk-17-jdk autoconf libtool pkg-config zlib1g-dev ccache lld
+        sudo apt-get install -y build-essential libsqlite3-dev sqlite3 bzip2 libbz2-dev libssl-dev openssl libgdbm-dev libgdbm-compat-dev liblzma-dev libreadline-dev libffi-dev uuid-dev libncurses5-dev libncursesw5-dev xz-utils zip unzip autoconf libtool pkg-config zlib1g-dev ccache lld
 
     - name: Instalar Buildozer y Cython
       run: |
+        pip install --upgrade pip
         pip install cython==0.29.33
         pip install buildozer
 
-    - name: Generar y configurar buildozer.spec
+    - name: Generar y parchear buildozer.spec
       run: |
         buildozer init
-        sed -i 's/# android.api = 31/android.api = 33/' buildozer.spec
-        sed -i 's/# android.minapi = 21/android.minapi = 24/' buildozer.spec
-        sed -i 's/# android.ndk = 25b/android.ndk = 25b/' buildozer.spec
+        # Forzar el uso de sdkmanager actualizado y aceptar licencias
         sed -i 's/android.accept_sdk_license = False/android.accept_sdk_license = True/' buildozer.spec
-
-    - name: Aceptar licencias del SDK de Android
-      run: |
-        mkdir -p ~/.buildozer/android/platform/android-sdk/licenses
-        yes | buildozer android debug || true
-        yes | ~/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin/sdkmanager --licenses || true
+        sed -i 's/# android.api = 31/android.api = 33/' buildozer.spec
 
     - name: Compilar APK
       run: |
-        yes | buildozer -v android debug
+        buildozer -v android debug
 
-    - name: Subir archivo APK
+    - name: Subir APK generado
       uses: actions/upload-artifact@v4
       with:
         name: App-Android-APK
